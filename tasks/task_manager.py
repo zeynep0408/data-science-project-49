@@ -19,15 +19,15 @@ import math
 
 
 def load_belgeler():
-    """
-    Koda gömülü ~5 belge döndür. Her belge bir dict:
-      {"baslik": str, "metin": str}
-    Başlıklar farklı konular olsun (ör. "Pil ve Şarj", "Kamera", "Garanti"...).
-
-    Returns:
-        list[dict]
-    """
-    pass
+    """Belgeler HAZIR verildi (RAG corpus'un). Bunu değiştirme;
+    aşağıdaki fonksiyonları doldurman yeterli."""
+    return [
+        {"baslik": "Pil ve Şarj", "metin": "Nova X1 telefonun pili 4500 mAh kapasitelidir. Tam şarj yaklaşık 90 dakika sürer. Tipik kullanımda pil ömrü 1.5 gündür. Hızlı şarj desteklenir."},
+        {"baslik": "Kamera", "metin": "Nova X1 arka kamerası 50 MP çözünürlüktedir. Gece modu ve portre modu bulunur. Video 4K 60fps kaydeder. Ön kamera 16 MP."},
+        {"baslik": "Garanti", "metin": "Nova X1 için 2 yıl resmi garanti sunulur. Garanti üretim hatalarını kapsar; fiziksel hasar kapsam dışıdır. Onarım yetkili serviste yapılır."},
+        {"baslik": "Kutu İçeriği", "metin": "Kutuda Nova X1 telefon, USB-C şarj kablosu, 33W adaptör, SIM çıkarma iğnesi ve kullanım kılavuzu bulunur."},
+        {"baslik": "Su Direnci", "metin": "Nova X1 IP68 sertifikalıdır. 1.5 metre derinlikte 30 dakika suya dayanır. Tuzlu su ve kimyasallara karşı garanti verilmez."},
+    ]
 
 
 def parcala(metin, boyut=120, overlap=20):
