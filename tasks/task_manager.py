@@ -31,85 +31,64 @@ def load_belgeler():
 
 
 def parcala(metin, boyut=120, overlap=20):
-    """
-    Metni karakter bazlı, ÜST ÜSTE BİNEN (overlap) parçalara böl.
-    Her adımda `boyut` karakter al, sonra `boyut - overlap` kadar ilerle.
-
-    Args:
-        metin: str
-        boyut: int — parça uzunluğu (karakter)
-        overlap: int — komşu parçaların paylaştığı karakter
-    Returns:
-        list[str]
-    """
+    adim = boyut - overlap
+    return [metin[i:i + boyut] for i in range(0, len(metin), adim)]
     pass
 
 
 def chunkla_belgeler(belgeler, boyut=120, overlap=20):
-    """
-    Her belgeyi `parcala` ile böl; her parçaya belgenin başlığını KAYNAK olarak ekle.
-    Döndürülen her eleman: {"metin": str, "kaynak": str}
-
-    Args:
-        belgeler: list[dict] — load_belgeler() çıktısı
-    Returns:
-        list[dict]
-    """
+    return [
+        {"metin": parca, "kaynak": doc["baslik"]}
+        for doc in belgeler
+        for parca in parcala(doc["metin"], boyut, overlap)
+    ]
     pass
 
 
 def benzerlik(v1, v2):
-    """
-    İki vektör arasındaki COSINE benzerliğini hesapla:
-        dot(v1, v2) / (norm(v1) * norm(v2))
-    Sıfır vektörde 0.0 döndür (bölme hatası olmasın).
-
-    Returns:
-        float
-    """
+    dot = sum(a * b for a, b in zip(v1, v2))
+    norm_v1 = math.sqrt(sum(a * a for a in v1))
+    norm_v2 = math.sqrt(sum(b * b for b in v2))
+    
+    if norm_v1 == 0 or norm_v2 == 0:
+        return 0.0
+    
+    return dot / (norm_v1 * norm_v2)
     pass
 
 
 def indeksle(chunks, embed):
-    """
-    Her chunk'ı embed et; chunk'a "vektor" alanı ekleyip döndür.
-    Her eleman: {"metin": ..., "kaynak": ..., "vektor": embed(metin)}
-
-    Args:
-        chunks: list[dict] — chunkla_belgeler çıktısı
-        embed: callable — str → list[float]
-    Returns:
-        list[dict]
-    """
+    return [
+        {**chunk, "vektor": embed(chunk["metin"])}
+        for chunk in chunks
+    ]
     pass
 
 
 def getir(soru, index, embed, k=3):
-    """
-    Soruyu embed et, index'teki her chunk ile COSINE benzerliğini hesapla,
-    en yüksek benzerlikli ilk `k` chunk'ı döndür (vektörleriyle birlikte).
+    soru_vektor = embed(soru)
+    skorlu_liste = []
 
-    Args:
-        soru: str
-        index: list[dict] — indeksle çıktısı
-        embed: callable
-        k: int
-    Returns:
-        list[dict] — en benzer k chunk
-    """
+    for item in index:
+        skor = benzerlik(soru_vektor, item["vektor"])
+        skorlu_liste.append((skor, item))
+
+    skorlu_liste.sort(key=lambda x: x[0], reverse=True)
+    return [item for _, item in skorlu_liste[:k]]
     pass
 
 
 def sor(soru, index, embed, llm, k=3):
-    """
-    Tam RAG cevabı:
-      1. getir(soru, index, embed, k) → ilgili chunk'lar
-      2. bağlam = chunk metinlerini birleştir
-      3. cevap = llm(bağlamlı prompt)
-      4. kaynaklar = getirilen chunk'ların benzersiz "kaynak"ları (sıralı)
-    (cevap, kaynaklar) ikilisini döndür.
-
-    Returns:
-        tuple(str, list[str])
-    """
+    ilgili_chunklar = getir(soru, index, embed, k=k)
+    baglam = "\n".join([chunk["metin"] for chunk in ilgili_chunklar])
+    prompt = f"Bağlam:\n{baglam}\n\nSoru: {soru}\nCevap:"
+    cevap = llm(prompt)
+    
+    kaynaklar = []
+    for chunk in ilgili_chunklar:
+        kaynak = chunk["kaynak"]
+        if kaynak not in kaynaklar:
+            kaynaklar.append(kaynak)
+            
+    return cevap, kaynaklar
     pass
